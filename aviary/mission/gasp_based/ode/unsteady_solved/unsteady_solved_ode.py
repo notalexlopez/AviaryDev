@@ -46,6 +46,13 @@ class UnsteadySolvedODE(TwoDOFODE):
             'as an output and adjusts the TAS rate equation.',
         )
         self.options.declare(
+            'rotation',
+            types=bool,
+            default=False,
+            desc='True if this is a rotation phase (e.g. takeoff rotation). Used with '
+            'ground_roll to set fixed throttle to 0.7 instead of 1.0.',
+        )
+        self.options.declare(
             'clean',
             types=bool,
             default=False,
@@ -130,12 +137,38 @@ class UnsteadySolvedODE(TwoDOFODE):
             'control_iter_group', subsys=om.Group(), promotes_inputs=['*'], promotes_outputs=['*']
         )
 
-        # Also need to change the run script and the iter group solver when using this;
-        # just testing for now
+        rotation = self.options['rotation']
+
         throttle_balance_group = self.add_subsystem(
             'throttle_balance_group', om.Group(), promotes=['*']
         )
 
+        # if ground_roll and not rotation:
+        #     # Ground roll only: fixed full throttle
+        #     throttle_val = np.ones(nn)
+        #     throttle_balance_group.add_subsystem(
+        #         'throttle_fixed',
+        #         om.ExecComp(
+        #             'throttle = val',
+        #             throttle={'units': 'unitless', 'shape': (nn,)},
+        #             val={'val': throttle_val, 'units': 'unitless', 'shape': (nn,)},
+        #         ),
+        #         promotes_outputs=[(Dynamic.Vehicle.Propulsion.THROTTLE, 'throttle')],
+        #     )
+        # elif ground_roll and rotation:
+        #     # Ground roll + rotation: fixed reduced throttle
+        #     throttle_val = np.ones(nn) * 0.7
+        #     throttle_balance_group.add_subsystem(
+        #         'throttle_fixed',
+        #         om.ExecComp(
+        #             'throttle = val',
+        #             throttle={'units': 'unitless', 'shape': (nn,)},
+        #             val={'val': throttle_val, 'units': 'unitless', 'shape': (nn,)},
+        #         ),
+        #         promotes_outputs=[(Dynamic.Vehicle.Propulsion.THROTTLE, 'throttle')],
+        #     )
+        # else:
+            # All other phases: solve for throttle via balance
         throttle_balance_comp = om.BalanceComp()
         throttle_balance_comp.add_balance(
             Dynamic.Vehicle.Propulsion.THROTTLE,
@@ -149,14 +182,12 @@ class UnsteadySolvedODE(TwoDOFODE):
             upper=1.0 if throttle_enforcement == 'bounded' else None,
             res_ref=1.0e6,
         )
-
         throttle_balance_group.add_subsystem(
             'throttle_balance_comp',
             subsys=throttle_balance_comp,
             promotes_inputs=['*'],
             promotes_outputs=['*'],
         )
-
         throttle_balance_group.nonlinear_solver = om.NewtonSolver(
             solve_subsystems=True,
             atol=1.0e-10,
@@ -253,7 +284,7 @@ class UnsteadySolvedODE(TwoDOFODE):
         )
 
         control_iter_group.nonlinear_solver = om.NewtonSolver(
-            solve_subsystems=True, atol=1.0e-10, rtol=1.0e-10
+            solve_subsystems=True, restart_from_successful=True, atol=1.0e-10, rtol=1.0e-10
         )
         # control_iter_group.nonlinear_solver.linesearch = om.BoundsEnforceLS()
         control_iter_group.linear_solver = om.DirectSolver(assemble_jac=True)

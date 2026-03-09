@@ -1060,7 +1060,10 @@ class TakeoffLiftoffToObstacle(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']
@@ -1372,7 +1375,10 @@ class TakeoffObstacleToMicP2(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']
@@ -1676,7 +1682,10 @@ class TakeoffMicP2ToEngineCutback(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']
@@ -1959,7 +1968,10 @@ class TakeoffEngineCutback(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']
@@ -2248,7 +2260,10 @@ class TakeoffEngineCutbackToMicP1(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']
@@ -2548,7 +2563,10 @@ class TakeoffMicP1ToClimb(PhaseBuilderBase):
             Dynamic.Vehicle.Propulsion.THROTTLE,
             targets=Dynamic.Vehicle.Propulsion.THROTTLE,
             units='unitless',
-            opt=False,
+            opt=True,
+            lower=0.0,
+            upper=1.0,
+            continuity=True,
         )
 
         lower_angle_of_attack, units = user_options['lower_angle_of_attack']

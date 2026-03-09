@@ -20,7 +20,7 @@ from aviary.variable_info.variables import Dynamic
 # - self.meta_data, with cls.default_meta_data customization point
 
 
-class TwoDOFPhaseOptions(AviaryOptionsDictionary):
+class SolvedTwoDOFPhaseOptions(AviaryOptionsDictionary):
     def declare_options(self):
         self.declare(
             name='num_segments',
@@ -44,7 +44,7 @@ class TwoDOFPhaseOptions(AviaryOptionsDictionary):
             'mass_defect_ref': 1e6,
             'mass_bounds': (0.0, None),
         }
-        self.add_state_options('mass', units='kg', defaults=defaults)
+        self.add_state_options('mass', units='lbm', defaults=defaults)
 
         # TODO: These defaults aren't great, but need to keep things the same for now.
         defaults = {
@@ -101,34 +101,6 @@ class TwoDOFPhaseOptions(AviaryOptionsDictionary):
             'All other phases of flight (climb, cruise, descent) this must be set to False.',
         )
 
-        # The options below have not yet been revamped.
-
-        self.declare(
-            name='required_available_climb_rate',
-            default=None,
-            units='ft/s',
-            desc='Adds a constraint requiring Dynamic.Mission.ALTITUDE_RATE_MAX to be no '
-            'smaller than required_available_climb_rate. This helps to ensure that the '
-            'propulsion system is large enough to handle emergency maneuvers at all points '
-            'throughout the flight envelope. Default value is None for no constraint.',
-        )
-
-        self.declare(
-            name='no_climb',
-            types=bool,
-            default=False,
-            desc='Set to True to prevent the aircraft from climbing during the phase. This option '
-            'can be used to prevent unexpected climb during a descent phase.',
-        )
-
-        self.declare(
-            name='no_descent',
-            types=bool,
-            default=False,
-            desc='Set to True to prevent the aircraft from descending during the phase. This '
-            'can be used to prevent unexpected descent during a climb phase.',
-        )
-
         self.declare(
             name='throttle_enforcement',
             default='path_constraint',
@@ -151,6 +123,22 @@ class TwoDOFPhaseOptions(AviaryOptionsDictionary):
         )
 
         self.declare(
+            name='no_climb',
+            types=bool,
+            default=False,
+            desc='Set to True to prevent the aircraft from climbing during the phase. This option '
+            'can be used to prevent unexpected climb during a descent phase.',
+        )
+
+        self.declare(
+            name='no_descent',
+            types=bool,
+            default=False,
+            desc='Set to True to prevent the aircraft from descending during the phase. This '
+            'can be used to prevent unexpected descent during a climb phase.',
+        )
+
+        self.declare(
             name='constraints',
             types=dict,
             default={},
@@ -158,6 +146,18 @@ class TwoDOFPhaseOptions(AviaryOptionsDictionary):
             "'loc': 'initial', 'units': 'deg', 'type': 'boundary',}. For more details see "
             '_add_user_defined_constraints().',
         )
+
+        self.declare(
+            name='required_available_climb_rate',
+            default=None,
+            units='ft/s',
+            desc='Adds a constraint requiring Dynamic.Mission.ALTITUDE_RATE_MAX to be no '
+            'smaller than required_available_climb_rate. This helps to ensure that the '
+            'propulsion system is large enough to handle emergency maneuvers at all points '
+            'throughout the flight envelope. Default value is None for no constraint.',
+        )
+
+        # The options below have not yet been revamped.
 
         self.declare(
             name='rotation',
@@ -175,10 +175,10 @@ class TwoDOFPhaseOptions(AviaryOptionsDictionary):
 
 
 @register
-class TwoDOFPhase(FlightPhaseBase):
+class SolvedTwoDOFPhase(FlightPhaseBase):
     """A phase builder for a two degree of freedom (2DOF) phase."""
 
-    default_options_class = TwoDOFPhaseOptions
+    default_options_class = SolvedTwoDOFPhaseOptions
 
     def build_phase(self, aviary_options: AviaryValues = None):
         """
@@ -219,16 +219,12 @@ class TwoDOFPhase(FlightPhaseBase):
 
         extra_options = {}
         if not fix_initial:
-            extra_options = {
-                'initial_bounds': initial_bounds,
-                'initial_ref': initial_ref,
-            }
+            extra_options['initial_bounds'] = initial_bounds
+            extra_options['initial_ref'] = initial_ref
 
         if not fix_duration:
-            extra_options = {
-                'duration_bounds': duration_bounds,
-                'duration_ref': duration_ref,
-            }
+            extra_options['duration_bounds'] = duration_bounds
+            extra_options['duration_ref'] = duration_ref
 
         phase.set_time_options(
             fix_initial=fix_initial,
@@ -277,7 +273,6 @@ class TwoDOFPhase(FlightPhaseBase):
 
     def _extra_ode_init_kwargs(self):
         """Return extra kwargs required for initializing the ODE."""
-        # TODO: support external_subsystems and meta_data in the base class
         return {
             'external_subsystems': self.external_subsystems,
             'meta_data': self.meta_data,
@@ -289,14 +284,16 @@ class TwoDOFPhase(FlightPhaseBase):
         }
 
 
-TwoDOFPhase._add_initial_guess_meta_data(
+SolvedTwoDOFPhase._add_initial_guess_meta_data(
     InitialGuessIntegrationVariable(key='distance'),
     desc='initial guess for initial distance and duration specified as a tuple',
 )
 
-TwoDOFPhase._add_initial_guess_meta_data(
+SolvedTwoDOFPhase._add_initial_guess_meta_data(
     InitialGuessPolynomialControl('angle_of_attack'),
     desc='initial guess for angle of attack',
 )
 
-TwoDOFPhase._add_initial_guess_meta_data(InitialGuessState('time'), desc='initial guess for time')
+SolvedTwoDOFPhase._add_initial_guess_meta_data(
+    InitialGuessState('time'), desc='initial guess for time'
+)

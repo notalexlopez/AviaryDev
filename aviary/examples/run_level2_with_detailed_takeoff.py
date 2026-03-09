@@ -1,5 +1,8 @@
 import openmdao.api as om
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 import aviary.api as av
 
 # fmt: off
@@ -27,13 +30,14 @@ subsystem_options = {
 
 mach_optimize = True
 altitude_optimize = True
-optimizer = 'SLSQP'
+optimizer = 'SNOPT'
+num_segments = 3
 
 phase_info = {
     'pre_mission': {'include_takeoff': False, 'optimize_mass': False},
     'AB': {
         'user_options': {
-            'num_segments': 5,
+            'num_segments': num_segments,
             'order': 3,
             'ground_roll': True,
             'time_duration_ref': (100.0, 'kn'),
@@ -50,7 +54,7 @@ phase_info = {
     },
     'rotate': {
         'user_options': {
-            'num_segments': 5,
+            'num_segments': num_segments,
             'order': 3,
             'ground_roll': True,
             'clean': False,
@@ -60,6 +64,7 @@ phase_info = {
             'time_duration_bounds': ((200.0, 2.0e3), 'ft'),
             'throttle_enforcement': 'boundary_constraint',
             'rotation': True,
+            'mass_ref': (170000, 'lbm'),
             'mach_optimize': mach_optimize,
             'mach_polynomial_order': 1,
             'mach_bounds': ((0.18, 0.2), 'unitless'),
@@ -73,7 +78,7 @@ phase_info = {
                     'loc': 'final',
                     'units': 'lbf',
                     'type': 'boundary',
-                    'ref': 10.0e5,
+                    'ref': 1.0e5,
                 },
             },
         },
@@ -88,7 +93,7 @@ phase_info = {
     },
     'BC': {
         'user_options': {
-            'num_segments': 5,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -100,7 +105,9 @@ phase_info = {
             'mach_bounds': ((0.2, 0.22), 'unitless'),
             'altitude_optimize': altitude_optimize,
             'altitude_polynomial_order': 1,
-            'altitude_bounds': ((0.0, 250.0), 'ft'),
+            'altitude_bounds': ((0.0, 150.0), 'ft'),
+            'altitude_final': (50.0, 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'boundary_constraint',
             'rotation': False,
         },
@@ -115,7 +122,7 @@ phase_info = {
     },
     'CD_to_P2': {
         'user_options': {
-            'num_segments': 4,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -130,15 +137,8 @@ phase_info = {
             'altitude_initial': (50.0, 'ft'),
             'altitude_final': (985.0, 'ft'),
             'altitude_bounds': ((0.0, 985.0), 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'boundary_constraint',
-            'constraints': {
-                'altitude': {
-                    'equals': 985.0,
-                    'loc': 'final',
-                    'units': 'ft',
-                    'type': 'boundary',
-                },
-            },
         },
         'subsystem_options': subsystem_options,
         'initial_guesses': {
@@ -150,7 +150,7 @@ phase_info = {
     },
     'P2_to_DE': {
         'user_options': {
-            'num_segments': 4,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -163,6 +163,7 @@ phase_info = {
             'altitude_optimize': altitude_optimize,
             'altitude_polynomial_order': 1,
             'altitude_bounds': ((985.0, 1100.0), 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'path_constraint',
             'constraints': {
                 'distance': {
@@ -176,7 +177,7 @@ phase_info = {
         },
         'subsystem_options': subsystem_options,
         'initial_guesses': {
-            'distance': [(10.0e3, 14.0e3), 'ft'],
+            'distance': [(14.0e3, 4.0e3), 'ft'],
             'time': [(60.0, 80.0), 's'],
             'mach': [(0.22, 0.3), 'unitless'],
             'altitude': [(985.0, 1100.0), 'ft'],
@@ -185,7 +186,7 @@ phase_info = {
     },
     'DE': {
         'user_options': {
-            'num_segments': 3,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -198,6 +199,7 @@ phase_info = {
             'altitude_optimize': altitude_optimize,
             'altitude_polynomial_order': 2,
             'altitude_bounds': ((985.0, 1.5e3), 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'path_constraint',
             'constraints': {
                 'flight_path_angle': {
@@ -219,7 +221,7 @@ phase_info = {
     },
     'EF_to_P1': {
         'user_options': {
-            'num_segments': 3,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -232,6 +234,7 @@ phase_info = {
             'altitude_optimize': altitude_optimize,
             'altitude_polynomial_order': 1,
             'altitude_bounds': ((1.1e3, 1.2e3), 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'path_constraint',
             'constraints': {
                 'distance': {
@@ -260,7 +263,7 @@ phase_info = {
     },
     'EF_past_P1': {
         'user_options': {
-            'num_segments': 5,
+            'num_segments': num_segments,
             'order': 3,
             'clean': False,
             'time_initial_ref': (1.0e3, 'ft'),
@@ -273,6 +276,7 @@ phase_info = {
             'altitude_optimize': altitude_optimize,
             'altitude_polynomial_order': 1,
             'altitude_bounds': ((1.0e3, 3.0e3), 'ft'),
+            'mass_ref': (170000, 'lbm'),
             'throttle_enforcement': 'boundary_constraint',
             'constraints': {
                 'flight_path_angle': {
@@ -317,22 +321,33 @@ if __name__ == '__main__':
 
     prob.build_model()
 
-    prob.add_driver(optimizer, max_iter=25)
+    prob.add_driver(optimizer, max_iter=0)
+
+    if optimizer == 'IPOPT':
+        # custom optimizer seettings
+        prob.driver.opt_settings['mu_init'] = 1.0
+        prob.driver.opt_settings['nlp_scaling_method'] = 'none'
+        prob.driver.opt_settings['limited_memory_max_history'] = 50
 
     prob.add_design_variables()
 
     # Load optimization problem formulation
     # Detail which variables the optimizer can control
-    prob.add_objective('mass')
+    prob.add_objective('mass')  # maximize final mass (i.e. minimize fuel burn)
 
     prob.setup()
 
+    # set the start-of-takeoff mass to mission:summary:gross_mass
+    prob.set_val('mission:summary:gross_mass', 175000, units='lbm')
+
     prob.run_aviary_problem(suppress_solver_print=True)
+    with open("debug_detailed_aviary.txt", "w") as f:
+        prob.model.list_vars(residuals=True, print_arrays=True, out_stream=f, units=True)
 
     try:
         loc = prob.get_outputs_dir()
         cr = om.CaseReader(f'{loc}/problem_history.db')
-    except:
+    except Exception:
         cr = om.CaseReader('problem_history.db')
 
     cases = cr.get_cases('problem')
@@ -340,26 +355,72 @@ if __name__ == '__main__':
 
     output_data = {}
 
-    for point_name, phase_name in [['P1', 'EF_to_P1'], ['P2', 'CD_to_P2']]:
-        output_data[point_name] = {}
-        output_data[point_name]['thrust_fraction'] = (
-            case.get_val(f'traj.{phase_name}.rhs_all.thrust_net', units='N')[-1][0]
-            / case.get_val(f'traj.{phase_name}.rhs_all.thrust_net_max', units='N')[-1][0]
-        )
-        output_data[point_name]['true_airspeed'] = case.get_val(
-            f'traj.{phase_name}.timeseries.velocity', units='kn'
-        )[-1][0]
-        output_data[point_name]['angle_of_attack'] = case.get_val(
-            f'traj.{phase_name}.timeseries.angle_of_attack', units='deg'
-        )[-1][0]
-        output_data[point_name]['flight_path_angle'] = case.get_val(
-            f'traj.{phase_name}.timeseries.flight_path_angle', units='deg'
-        )[-1][0]
-        output_data[point_name]['altitude'] = case.get_val(
-            f'traj.{phase_name}.timeseries.altitude', units='ft'
-        )[-1][0]
-        output_data[point_name]['distance'] = case.get_val(
-            f'traj.{phase_name}.timeseries.distance', units='ft'
-        )[-1][0]
+    # for point_name, phase_name in [['P1', 'EF_to_P1'], ['P2', 'CD_to_P2']]:
+    #     output_data[point_name] = {}
+    #     output_data[point_name]['thrust_fraction'] = (
+    #         case.get_val(f'traj.{phase_name}.rhs_all.thrust_net', units='N')[-1][0]
+    #         / case.get_val(f'traj.{phase_name}.rhs_all.thrust_net_max', units='N')[-1][0]
+    #     )
+    #     output_data[point_name]['true_airspeed'] = case.get_val(
+    #         f'traj.{phase_name}.timeseries.velocity', units='kn'
+    #     )[-1][0]
+    #     output_data[point_name]['angle_of_attack'] = case.get_val(
+    #         f'traj.{phase_name}.timeseries.angle_of_attack', units='deg'
+    #     )[-1][0]
+    #     output_data[point_name]['flight_path_angle'] = case.get_val(
+    #         f'traj.{phase_name}.timeseries.flight_path_angle', units='deg'
+    #     )[-1][0]
+    #     output_data[point_name]['altitude'] = case.get_val(
+    #         f'traj.{phase_name}.timeseries.altitude', units='ft'
+    #     )[-1][0]
+    #     output_data[point_name]['distance'] = case.get_val(
+    #         f'traj.{phase_name}.timeseries.distance', units='ft'
+    #     )[-1][0]
 
-    print(output_data)
+    # print(output_data)
+
+    # Plot states vs time for each phase (labeled and colored by phase)
+    traj_phases = [k for k in phase_info if k not in ('pre_mission', 'post_mission')]
+    colors = plt.cm.tab10(np.linspace(0, 1, max(len(traj_phases), 10)))
+    phase_colors = {p: colors[i] for i, p in enumerate(traj_phases)}
+
+    def get_phase_vals(case, phase_name, var_path, units=None):
+        """Get timeseries values for a phase; return (times, values) or (None, None) if missing."""
+        try:
+            path = f'traj.{phase_name}.timeseries.{var_path}'
+            vals = case.get_val(path, units=units) if units else case.get_val(path)
+            vals = np.asarray(vals).ravel()
+            times = case.get_val(f'traj.{phase_name}.timeseries.time', units='s')
+            times = np.asarray(times).ravel()
+            if len(times) != len(vals):
+                times = np.linspace(times[0], times[-1], len(vals)) if len(times) >= 2 else np.arange(len(vals))
+            return times, vals
+        except Exception:
+            return None, None
+
+    state_specs = [
+        ('distance', 'distance', 'ft', 'Distance (ft)'),
+        ('mass', 'mass', 'lbm', 'Mass (lbm)'),
+        ('velocity', 'velocity', 'kn', 'Velocity (kn)'),
+        ('mach', 'mach', None, 'Mach'),
+        ('altitude', 'altitude', 'ft', 'Altitude (ft)'),
+        ('angle_of_attack', 'angle_of_attack', 'deg', 'Angle of attack (deg)'),
+        ('flight_path_angle', 'flight_path_angle', 'deg', 'Flight path angle (deg)'),
+    ]
+
+    fig, axes = plt.subplots(4, 2, figsize=(12, 12))
+    axes = axes.ravel()
+    for ax_idx, (var_path, _v2, units, ylabel) in enumerate(state_specs):
+        ax = axes[ax_idx]
+        for phase_name in traj_phases:
+            t, y = get_phase_vals(case, phase_name, var_path, units)
+            if t is not None and len(t) > 0:
+                ax.plot(t, y, color=phase_colors[phase_name], label=phase_name)
+        ax.set_ylabel(ylabel)
+        ax.set_xlabel('Time (s)')
+        ax.legend(loc='best', fontsize=7)
+        ax.grid(True, alpha=0.3)
+    axes[-1].set_visible(False)
+    plt.suptitle('Takeoff mission states vs time')
+    plt.tight_layout()
+    plt.show()

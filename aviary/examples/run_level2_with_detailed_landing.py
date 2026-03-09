@@ -4,7 +4,7 @@ import aviary.api as av
 
 # fmt: off
 subsystem_options = {
-    'core_aerodynamics': {
+    'aerodynamics': {
         'method': 'low_speed',
         'ground_altitude': 0.0,  # units='ft'
         'angles_of_attack': [
@@ -26,7 +26,7 @@ subsystem_options = {
 # fmt: on
 
 subsystem_options_landing = subsystem_options.copy()
-subsystem_options_landing['core_aerodynamics']['drag_coefficient_factor'] = 3.0
+subsystem_options_landing['aerodynamics']['drag_coefficient_factor'] = 3.0
 
 mach_optimize = False
 altitude_optimize = False
@@ -166,6 +166,9 @@ prob.add_design_variables()
 prob.add_objective('mass')
 
 prob.setup()
+
+# set the start-of-landing mass to mission:summary:gross_mass
+prob.set_val('mission:summary:gross_mass', 175000, units='lbm')
 
 prob.run_aviary_problem()
 
