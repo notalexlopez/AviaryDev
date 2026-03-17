@@ -99,7 +99,7 @@ phase_info = {
             'time_initial_ref': (1.0e3, 'ft'),
             'time_initial_bounds': ((1.0, 16.0e3), 'ft'),
             'time_duration_ref': (1.0e3, 'ft'),
-            'time_duration_bounds': ((500.0, 1500.0), 'ft'),
+            'time_duration_bounds': ((500.0, 2000.0), 'ft'),
             'mach_optimize': mach_optimize,
             'mach_polynomial_order': 1,
             'mach_bounds': ((0.2, 0.22), 'unitless'),
@@ -321,7 +321,7 @@ if __name__ == '__main__':
 
     prob.build_model()
 
-    prob.add_driver(optimizer, max_iter=0)
+    prob.add_driver(optimizer, max_iter=100)
 
     if optimizer == 'IPOPT':
         # custom optimizer seettings
@@ -339,10 +339,11 @@ if __name__ == '__main__':
 
     # set the start-of-takeoff mass to mission:summary:gross_mass
     prob.set_val('mission:summary:gross_mass', 175000, units='lbm')
-
+    
     prob.run_aviary_problem(suppress_solver_print=True)
-    with open("debug_detailed_aviary.txt", "w") as f:
-        prob.model.list_vars(residuals=True, print_arrays=True, out_stream=f, units=True)
+
+    # with open("debug_detailed_aviary.txt", "w") as f:
+    #     prob.model.list_vars(residuals=True, print_arrays=True, out_stream=f, units=True)
 
     try:
         loc = prob.get_outputs_dir()
@@ -355,29 +356,29 @@ if __name__ == '__main__':
 
     output_data = {}
 
-    # for point_name, phase_name in [['P1', 'EF_to_P1'], ['P2', 'CD_to_P2']]:
-    #     output_data[point_name] = {}
-    #     output_data[point_name]['thrust_fraction'] = (
-    #         case.get_val(f'traj.{phase_name}.rhs_all.thrust_net', units='N')[-1][0]
-    #         / case.get_val(f'traj.{phase_name}.rhs_all.thrust_net_max', units='N')[-1][0]
-    #     )
-    #     output_data[point_name]['true_airspeed'] = case.get_val(
-    #         f'traj.{phase_name}.timeseries.velocity', units='kn'
-    #     )[-1][0]
-    #     output_data[point_name]['angle_of_attack'] = case.get_val(
-    #         f'traj.{phase_name}.timeseries.angle_of_attack', units='deg'
-    #     )[-1][0]
-    #     output_data[point_name]['flight_path_angle'] = case.get_val(
-    #         f'traj.{phase_name}.timeseries.flight_path_angle', units='deg'
-    #     )[-1][0]
-    #     output_data[point_name]['altitude'] = case.get_val(
-    #         f'traj.{phase_name}.timeseries.altitude', units='ft'
-    #     )[-1][0]
-    #     output_data[point_name]['distance'] = case.get_val(
-    #         f'traj.{phase_name}.timeseries.distance', units='ft'
-    #     )[-1][0]
+    for point_name, phase_name in [['P1', 'EF_to_P1'], ['P2', 'CD_to_P2']]:
+        output_data[point_name] = {}
+        output_data[point_name]['thrust_fraction'] = (
+            case.get_val(f'traj.{phase_name}.rhs_all.thrust_net', units='N')[-1][0]
+            / case.get_val(f'traj.{phase_name}.rhs_all.thrust_net_max', units='N')[-1][0]
+        )
+        output_data[point_name]['true_airspeed'] = case.get_val(
+            f'traj.{phase_name}.timeseries.velocity', units='kn'
+        )[-1][0]
+        output_data[point_name]['angle_of_attack'] = case.get_val(
+            f'traj.{phase_name}.timeseries.angle_of_attack', units='deg'
+        )[-1][0]
+        output_data[point_name]['flight_path_angle'] = case.get_val(
+            f'traj.{phase_name}.timeseries.flight_path_angle', units='deg'
+        )[-1][0]
+        output_data[point_name]['altitude'] = case.get_val(
+            f'traj.{phase_name}.timeseries.altitude', units='ft'
+        )[-1][0]
+        output_data[point_name]['distance'] = case.get_val(
+            f'traj.{phase_name}.timeseries.distance', units='ft'
+        )[-1][0]
 
-    # print(output_data)
+    print(output_data)
 
     # Plot states vs time for each phase (labeled and colored by phase)
     traj_phases = [k for k in phase_info if k not in ('pre_mission', 'post_mission')]
